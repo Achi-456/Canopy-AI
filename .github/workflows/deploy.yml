@@ -1,0 +1,32 @@
+name: Deploy Canopy-AI Stack
+
+on:
+  push:
+    branches: [ "main" ] # Triggers the deployment when you push to main
+
+jobs:
+  deploy:
+    runs-on: self-hosted # Tells GitHub to use your RHEL 'demon' server
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Inject Secrets & Build Environment
+        run: |
+          # The runner creates the .env file dynamically
+          touch ./backend/.env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> ./backend/.env
+          
+          # If you have Firebase variables, add them here too, for example:
+          # echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> ./backend/.env
+
+      - name: Deploy with Docker Compose
+        run: |
+          # Stop old containers
+          docker compose down
+          
+          # Rebuild and start new containers in detached mode
+          docker compose up --build -d
+          
+          # Clean up old unused images to save disk space
+          docker image prune -f
